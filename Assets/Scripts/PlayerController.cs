@@ -2,6 +2,7 @@ using System.Numerics;
 using UnityEngine;
 using System.Collections;
 using Vector2 = UnityEngine.Vector2;
+using Vector3 = UnityEngine.Vector3;
 
 public class PlayerController : MonoBehaviour
 {
@@ -14,11 +15,28 @@ public class PlayerController : MonoBehaviour
     private float currentSpeed; // 현재 속도
     private bool isVulnerable = false; // 취약 상태 여부
     private float vulnerableTimer = 0f; // 취약 상태 타이머
+    private Vector2 targetPosition; // 마우스로 클릭한 목표 위치
+    private bool isMovingToTarget = false; // 목표 지점으로 이동 중인지 여부
 
     void Update()
     {
+        // 마우스 입력 처리
+        if (Input.GetMouseButtonUp(0)) // 마우스 왼쪽 버튼을 뗄 때
+        {
+            Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            targetPosition = new Vector2(mouseWorldPos.x, mouseWorldPos.y);
+            isMovingToTarget = true;
+        }
+
         float moveVertical = 0f;
         float moveHorizontal = 0f;
+
+        // 키보드 입력이 있으면 마우스 이동을 취소
+        if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.DownArrow) ||
+            Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.RightArrow))
+        {
+            isMovingToTarget = false;
+        }
 
         // 취약 상태 타이머 관리
         if (isVulnerable)
@@ -49,6 +67,26 @@ public class PlayerController : MonoBehaviour
             this.GetComponent<SpriteRenderer>().flipX = false;
             //GetComponent<spriterenderer>().flipX = true;
             moveHorizontal = 1f;
+        }
+
+        // 마우스 클릭 위치로 이동
+        if (isMovingToTarget)
+        {
+            Vector2 direction = (targetPosition - (Vector2)transform.position).normalized;
+            moveHorizontal = direction.x;
+            moveVertical = direction.y;
+
+            // 목표 지점에 거의 도달했으면 이동 종료
+            if (Vector2.Distance(transform.position, targetPosition) < 0.1f)
+            {
+                isMovingToTarget = false;
+            }
+
+            // 스프라이트 방향 설정
+            if (moveHorizontal != 0)
+            {
+                this.GetComponent<SpriteRenderer>().flipX = (moveHorizontal < 0);
+            }
         }
 
         // 이동 입력이 있을 때 가속

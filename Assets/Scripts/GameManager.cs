@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
             
             if (Input.GetKeyDown(KeyCode.R))
             {
-                SceneManager.LoadScene("2DStage");
+                SceneManager.LoadScene("Stage2D");
             }
         }
         
