@@ -6,7 +6,11 @@ using Vector3 = UnityEngine.Vector3;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed = 8f; // 기본 이동 속도
+    public Animator animator; // 애니메이터 컴포넌트
+    
+    private Rigidbody2D rb; // 리지드바디 컴포넌트
+    
+    public float speed = 4f; // 기본 이동 속도
     public float accelerationRate = 2f; // 가속도 증가율
     public float decelerationRate = 3f; // 감속도 감소율
     public float maxSpeed = 16f; // 최대 속도
@@ -18,8 +22,41 @@ public class PlayerController : MonoBehaviour
     private Vector2 targetPosition; // 마우스로 클릭한 목표 위치
     private bool isMovingToTarget = false; // 목표 지점으로 이동 중인지 여부
 
+    public float jumpHeight = 2.5f; // 점프 높이
+    public float jumpDuration = 0.1f; // 점프 전체 소요 시간
+    private bool isJumping = false; // 점프 중인지 확인
+    private float jumpTimer = 0f; // 점프 타이머
+    private float initialY; // 점프 시작 위치
+
+    void Start()
+    {
+        animator = GetComponent<Animator>(); // Animator 컴포넌트 가져오기
+        currentSpeed = speed;
+        rb = GetComponent<Rigidbody2D>(); // Rigidbody2D 초기화
+    }
+    
     void Update()
     {
+        bool isMoving = Input.GetKey(KeyCode.UpArrow) || 
+                        Input.GetKey(KeyCode.DownArrow) || 
+                        Input.GetKey(KeyCode.LeftArrow) || 
+                        Input.GetKey(KeyCode.RightArrow);
+    
+        animator.SetBool("run", isMoving);
+
+        // 점프 중이 아닐 때만 새로운 점프 가능
+        if (Input.GetKeyDown(KeyCode.Space) && !isJumping)
+        {
+            StartJump();
+            animator.SetTrigger("jump");
+        }
+
+        // 점프 처리
+        if (isJumping)
+        {
+            ProcessJump();
+        }
+        
         // 마우스 입력 처리
         if (Input.GetMouseButtonUp(0)) // 마우스 왼쪽 버튼을 뗄 때
         {
@@ -48,24 +85,27 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // 입력 감지
-        if(Input.GetKey(KeyCode.UpArrow))
+        // 점프 중이 아닐 때만 수직 이동 허용
+        if (!isJumping)
         {
-            moveVertical = 1f;
+            if (Input.GetKey(KeyCode.UpArrow))
+            {
+                moveVertical = 1f;
+            }
+            if (Input.GetKey(KeyCode.DownArrow))
+            {
+                moveVertical = -1f;
+            }
         }
-        if(Input.GetKey(KeyCode.DownArrow))
-        {
-            moveVertical = -1f;
-        }
-        if(Input.GetKey(KeyCode.LeftArrow))
+
+        if (Input.GetKey(KeyCode.LeftArrow))
         {
             this.GetComponent<SpriteRenderer>().flipX = true;
             moveHorizontal = -1f;
         }
-        if(Input.GetKey(KeyCode.RightArrow))
+        if (Input.GetKey(KeyCode.RightArrow))
         {
             this.GetComponent<SpriteRenderer>().flipX = false;
-            //GetComponent<spriterenderer>().flipX = true;
             moveHorizontal = 1f;
         }
 
@@ -105,11 +145,42 @@ public class PlayerController : MonoBehaviour
         
         Vector2 movement = new Vector2(moveHorizontal, moveVertical).normalized;
 
+        
+        Debug.Log("Movement" + movement.x + ", " + movement.y);
+        Debug.Log("appliedsppeed" + appliedSpeed);
+        Debug.Log("time.deltatime" + Time.deltaTime);
         //3D 이동
         //Vector3 movement = new Vector3(moveHorizontal, 0f, moveVertical).normalized;
         transform.Translate(movement * (appliedSpeed * Time.deltaTime));
+        //rb.MovePosition(rb.position + movement * (appliedSpeed * Time.fixedDeltaTime));
         //transform.Translate();
         
+    }
+
+    private void StartJump()
+    {
+        isJumping = true;
+        jumpTimer = 0f;
+        initialY = transform.position.y;
+    }
+
+    private void ProcessJump()
+    {
+        jumpTimer += Time.deltaTime;
+        float progress = jumpTimer / jumpDuration;
+        
+        if (progress >= 1f)
+        {
+            isJumping = false;
+            return;
+        }
+
+        // 포물선 형태의 점프 곡선 (위로 올라갔다가 아래로 내려옴)
+        float heightMultiplier = Mathf.Sin(progress * Mathf.PI);
+        float newY = initialY + (jumpHeight * heightMultiplier);
+        
+        Vector3 currentPos = transform.position;
+        transform.position = new Vector3(currentPos.x, newY, currentPos.z);
     }
 
     public void Die()
