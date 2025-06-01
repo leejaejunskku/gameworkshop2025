@@ -20,7 +20,9 @@ public class bullet : MonoBehaviour
         // speed = speed == 0 ? Random.Range(5f, 10f) : speed;
         // damage = damage == 0 ? Random.Range(10f, 30f) : damage;
         // reward = reward == 0 ? Random.Range(1f, 2f) : reward;
-       
+        
+        this.gameObject.tag = "Bullet";
+        
         this.speed = speed == 0 ? Random.Range(5f, 10f) : speed;
         this.damage = damage == 0 ? Random.Range(10f, 30f) : damage;
         this.reward = reward == 0 ? Random.Range(1f, 2f) : reward;
